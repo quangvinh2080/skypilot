@@ -126,7 +126,15 @@ def launch(name: str,
         query.append('hosting_type>=1')
     query_str = ' '.join(query)
 
-    instance_list = vast.vast().search_offers(query=query_str, order='dph+')
+    # 'dph+' orders by price ascending, so instance_list[0] is the cheapest offer. The SDK default
+    # is 'score-', which puts the highest-scored (typically most expensive) offer first.
+    # A preemptible request must search the interruptible market ('bid'): the on-demand market is
+    # priced differently, and searching it while paying `min_bid` picks an offer that is not the
+    # cheapest interruptible one available.
+    offer_type = 'bid' if preemptible else 'on-demand'
+    instance_list = vast.vast().search_offers(query=query_str,
+                                              type=offer_type,
+                                              order='dph+')
 
     if isinstance(instance_list, int) or len(instance_list) == 0:
         raise RuntimeError('Failed to create instances, could not find an '
