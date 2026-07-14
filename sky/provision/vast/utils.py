@@ -116,9 +116,6 @@ def launch(name: str,
     num_gpus = int(instance_type.split('-')[0].replace('x', ''))
 
     query = [
-        'chunked=true',
-        'georegion=true',
-        f'geolocation="{region[-2:]}"',
         f'disk_space>={disk_size}',
         f'num_gpus={num_gpus}',
         f'gpu_name="{gpu_name}"',
@@ -129,7 +126,7 @@ def launch(name: str,
         query.append('hosting_type>=1')
     query_str = ' '.join(query)
 
-    instance_list = vast.vast().search_offers(query=query_str)
+    instance_list = vast.vast().search_offers(query=query_str, order='dph+')
 
     if isinstance(instance_list, int) or len(instance_list) == 0:
         raise RuntimeError('Failed to create instances, could not find an '
