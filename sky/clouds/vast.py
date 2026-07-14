@@ -231,6 +231,10 @@ class Vast(clouds.Cloud):
             'image_id': image_id,
             'secure_only': secure_only,
             'create_instance_kwargs': create_instance_kwargs or {},
+            # vast-ray.yml.j2 renders `Preemptible: {{use_spot}}`. Without this key Jinja renders it
+            # empty, the provisioner reads preemptible=False, and a --use-spot request is silently
+            # served as an on-demand instance while the optimizer quotes the spot price.
+            'use_spot': resources.use_spot,
         }
 
     def _get_feasible_launchable_resources(
