@@ -5,6 +5,7 @@
 # python sdk.
 #
 """Vast library wrapper for SkyPilot."""
+import os
 from pathlib import Path
 import shlex
 from typing import Any, Dict, List, Optional
@@ -124,7 +125,36 @@ def launch(name: str,
     if secure_only:
         query.append('datacenter=true')
         query.append('hosting_type>=1')
+
+    # Optional geo pin. `region` is a parameter of this function but never reaches the offer
+    # query, so --region does not constrain which Vast machine is picked and a user can land
+    # on a host on another continent. Read the pin from a file rather than the environment:
+    # the provisioner runs inside the long-lived API server process, which does not inherit
+    # the caller's shell environment. An empty or absent file means no constraint.
+    geo_file = os.path.expanduser('~/.sky/vast_geo')
+    if os.path.isfile(geo_file):
+        with open(geo_file, 'r', encoding='utf-8') as f:
+            codes = ','.join(c.strip().upper() for c in f.read().split(',')
+                             if c.strip())
+        if codes:
+            query.append(f'geolocation in [{codes}]')
+
     query_str = ' '.join(query)
+
+    # Ordering by `dph` alone selects hosts that are cheap per GPU-hour but can be expensive on
+    # the line items `dph` does not fully reflect: bandwidth, which is billed per byte at a rate
+    # each host sets independently, and storage, billed per GB-month and charged even while the
+    # instance is stopped. A slow uplink also stretches every image and model download during
+    # setup. Filter on those up front, and fall back to the unfiltered query so a thin market
+    # still yields a machine rather than a hard provisioning failure.
+    quality = [
+        'inet_down_cost<0.003',  # $/GB
+        'inet_up_cost<0.005',  # $/GB
+        'inet_down>500',  # Mb/s
+        'storage_cost<0.35',  # $/GB/month
+        'reliability>0.98',
+    ]
+    strict_str = ' '.join(query + quality)
 
     # 'dph+' orders by price ascending, so instance_list[0] is the cheapest offer. The SDK default
     # is 'score-', which puts the highest-scored (typically most expensive) offer first.
@@ -132,11 +162,23 @@ def launch(name: str,
     # priced differently, and searching it while paying `min_bid` picks an offer that is not the
     # cheapest interruptible one available.
     offer_type = 'bid' if preemptible else 'on-demand'
-    instance_list = vast.vast().search_offers(query=query_str,
-                                              type=offer_type,
-                                              order='dph+')
 
-    if isinstance(instance_list, int) or len(instance_list) == 0:
+    def _search(query_string: str) -> List[Any]:
+        found = vast.vast().search_offers(query=query_string,
+                                          type=offer_type,
+                                          order='dph+')
+        return [] if isinstance(found, int) else found
+
+    instance_list = _search(strict_str)
+    if not instance_list:
+        logger.warning(
+            'No Vast offer met the bandwidth/storage quality bar '
+            f'({" ".join(quality)}); falling back to the cheapest offer, '
+            'which may bill significantly more for network transfer or '
+            'storage.')
+        instance_list = _search(query_str)
+
+    if len(instance_list) == 0:
         raise RuntimeError('Failed to create instances, could not find an '
                            'offer that satisfies the requirements '
                            f'"{query_str}".')
