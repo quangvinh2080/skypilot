@@ -216,6 +216,13 @@ class Vast(clouds.Cloud):
             default_value=False,
             override_configs=resources.cluster_config_overrides,
         )
+        geolocation = skypilot_config.get_effective_region_config(
+            cloud='vast',
+            region=region.name,
+            keys=('geolocation',),
+            default_value=[],
+            override_configs=resources.cluster_config_overrides,
+        )
         create_instance_kwargs = skypilot_config.get_effective_region_config(
             cloud='vast',
             region=region.name,
@@ -230,6 +237,7 @@ class Vast(clouds.Cloud):
             'region': region.name,
             'image_id': image_id,
             'secure_only': secure_only,
+            'geolocation': geolocation or [],
             'create_instance_kwargs': create_instance_kwargs or {},
             # vast-ray.yml.j2 renders `Preemptible: {{use_spot}}`. Without this key Jinja renders it
             # empty, the provisioner reads preemptible=False, and a --use-spot request is silently

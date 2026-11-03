@@ -5,7 +5,6 @@
 # python sdk.
 #
 """Vast library wrapper for SkyPilot."""
-import os
 from pathlib import Path
 import shlex
 from typing import Any, Dict, List, Optional
@@ -44,6 +43,7 @@ def launch(name: str,
            ports: Optional[List[int]],
            preemptible: bool,
            secure_only: bool,
+           geolocation: Optional[List[str]] = None,
            private_docker_registry: Optional[bool] = None,
            login: Optional[str] = None,
            create_instance_kwargs: Optional[Dict[str, Any]] = None,
@@ -126,18 +126,13 @@ def launch(name: str,
         query.append('datacenter=true')
         query.append('hosting_type>=1')
 
-    # Optional geo pin. `region` is a parameter of this function but never reaches the offer
-    # query, so --region does not constrain which Vast machine is picked and a user can land
-    # on a host on another continent. Read the pin from a file rather than the environment:
-    # the provisioner runs inside the long-lived API server process, which does not inherit
-    # the caller's shell environment. An empty or absent file means no constraint.
-    geo_file = os.path.expanduser('~/.sky/vast_geo')
-    if os.path.isfile(geo_file):
-        with open(geo_file, 'r', encoding='utf-8') as f:
-            codes = ','.join(c.strip().upper() for c in f.read().split(',')
-                             if c.strip())
-        if codes:
-            query.append(f'geolocation in [{codes}]')
+    # Optional geo pin, from the `vast.geolocation` config (country codes). `region` is a
+    # parameter of this function but never reaches the offer query, so --region does not
+    # constrain which Vast machine is picked. The config travels with a managed job to the
+    # controller that provisions it, which a local file or the caller's environment does not.
+    codes = ','.join(c.strip().upper() for c in geolocation or [] if c.strip())
+    if codes:
+        query.append(f'geolocation in [{codes}]')
 
     query_str = ' '.join(query)
 

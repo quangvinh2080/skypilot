@@ -2144,6 +2144,12 @@ def get_config_schema():
                 'datacenter_only': {
                     'type': 'boolean',
                 },
+                'geolocation': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                    },
+                },
                 'create_instance_kwargs': {
                     'type': 'object',
                 },
