@@ -250,6 +250,7 @@ Below is the configuration syntax and some example values. See detailed explanat
 
   :ref:`vast <config-yaml-vast>`:
     :ref:`datacenter_only <config-yaml-vast-datacenter-only>`: true
+    :ref:`geolocation <config-yaml-vast-geolocation>`: [VN]
     :ref:`create_instance_kwargs <config-yaml-vast-create-instance-kwargs>`:
       template_hash: f0e124f0e98bfbc2ecb05dc713009ee7
       env: "-e YOUR_CUSTOM=YOUR_VAL"
@@ -2627,6 +2628,18 @@ may only be available on non-datacenter offers. This config filters both the cat
 can be overridden per task via :ref:`config flag <config-client-cli-flag>`.
 
 Default: ``false``
+
+.. _config-yaml-vast-geolocation:
+
+``vast.geolocation``
+~~~~~~~~~~~~~~~~~~~~
+
+Only rent Vast offers in these countries, given as two-letter codes (optional).
+The launch query gets ``geolocation in [...]``; the catalog is not filtered. This
+config can be overridden per task via :ref:`config flag <config-client-cli-flag>`,
+e.g. ``--config vast.geolocation=[VN]``.
+
+Default: ``[]`` (any country)
 
 .. _config-yaml-vast-create-instance-kwargs:
 
