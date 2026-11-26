@@ -63,7 +63,9 @@ install_requires = [
     # - uvicorn 0.36.0 removes setup_event_loop thus breaks SkyPilot's custom
     #   behavior.
     'uvicorn[standard] >=0.33.0, <0.36.0',
-    'fastapi',
+    # fastapi 0.145.0 drops the **extra kwargs of FastAPI.__init__, which the
+    # API server passes (prefix=...).
+    'fastapi<0.145',
     # Some pydantic versions are not compatible with ray. Adopted from ray's
     # setup.py:
     # https://github.com/ray-project/ray/blob/ray-2.9.3/python/setup.py#L254
