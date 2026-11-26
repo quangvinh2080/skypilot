@@ -55,6 +55,10 @@ SKY_REMOTE_RAY_PORT_DICT_STR = (
 SKY_REMOTE_RAY_PORT_FILE = '.sky/ray_port.json'
 SKY_REMOTE_RAY_TEMPDIR = '/tmp/ray_skypilot'
 SKY_REMOTE_RAY_VERSION = '2.9.3'
+# The skypilot release a Kubernetes pod installs from PyPI to apply the ray
+# patches before the SkyPilot wheel is uploaded. Its patches must target
+# SKY_REMOTE_RAY_VERSION, so bump the two together.
+SKY_K8S_POD_SKYPILOT_VERSION = '0.12.3.post1'
 
 # To avoid user image causing issue with the SkyPilot runtime, we run SkyPilot
 # commands the following prefix:
